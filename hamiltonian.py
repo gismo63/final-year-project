@@ -48,7 +48,6 @@ def mag_field(n): #returns the sum over all S_iz which when multiplied by the fi
         for l in range(n-1):
             z_mat = np.kron(order[n-l-2],z_mat)
         field += z_mat
-    print field
     return field
 
 def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
@@ -101,7 +100,7 @@ strength = 1 #overall multiplicative factor of interation strength
 
 #interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
 #J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
-J = strength*np.array([[0,1,1,1],[0,0,1,1],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
+J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
 #J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
 #J = np.array([[0,1],[1,0]]) #J for 2 electron system
 
@@ -127,6 +126,6 @@ g_state = eigenvectors[:,0]
 
 print g_state
 
-Sz = expect_sz(n, g_state)/2
+Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
 
 print Sz.round(10)
