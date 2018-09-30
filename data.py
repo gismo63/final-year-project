@@ -84,7 +84,35 @@ def expect_sz(n, g_state): #Calculates the expectation values of S_iz for each i
         Sz[i] = g_state.dot(z_mat.dot(g_state)) #computes <phi0|S_iz|phi0> where phi0 is the ground state eigenvector
     return Sz
 
+def expect_sy(n, g_state): #Calculates the expectation values of S_iy for each i
+    Sy = np.zeros(n)
+    for i in range(n):
+        order = []
+        for k in range(n):
+            if (k)==i:
+                order.append(s_y)
+            else:
+                order.append(identity)
+        y_mat = order[n-1]
+        for l in range(n-1):
+            y_mat = np.kron(order[n-l-2],y_mat)
+        Sy[i] = g_state.dot(y_mat.dot(g_state)) #computes <phi0|S_iy|phi0> where phi0 is the ground state eigenvector
+    return Sy
 
+def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
+    Sx = np.zeros(n)
+    for i in range(n):
+        order = []
+        for k in range(n):
+            if (k)==i:
+                order.append(s_x)
+            else:
+                order.append(identity)
+        x_mat = order[n-1]
+        for l in range(n-1):
+            x_mat = np.kron(order[n-l-2],x_mat)
+        Sx[i] = g_state.dot(x_mat.dot(g_state)) #computes <phi0|S_ix|phi0> where phi0 is the ground state eigenvector
+    return Sx
 
 
 
@@ -93,14 +121,16 @@ def expect_sz(n, g_state): #Calculates the expectation values of S_iz for each i
 s_plus = np.array([[0,1],[0,0]]) #spin raising operator in the |up>=(1,0) and |down>=(0,1) basis
 s_minus = np.array([[0,0],[1,0]]) #spin lowering operator in same basis
 s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
+s_y = np.array([[0,-1],[1,0]])
+s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
+n = 6 # number of spin sites
 
 strength = 1 #overall multiplicative factor of interation strength
 
-for k in range(1000):
+for k in range(2):
     print k
     J = np.zeros((n,n))
 
@@ -122,7 +152,7 @@ for k in range(1000):
 
     eigenvalues = eigenvalues.round(10)
 
-    #print eigenvalues
+    print eigenvalues[0:2]
 
 
     eigenvectors = eigenvectors.round(10)
@@ -134,5 +164,10 @@ for k in range(1000):
     #print g_state
 
     Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
+    Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
+    Sx = expect_sx(n, g_state)/2
 
-    #print Sz.round(10)
+    print Sz.round(10)
+    print Sy.round(10)
+    print Sx.round(10)
+    print ''
