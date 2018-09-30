@@ -56,7 +56,7 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                print i+1,j+1
+                #print i+1,j+1
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
@@ -96,36 +96,43 @@ s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
+n = 4 # number of spin sites
+
 strength = 1 #overall multiplicative factor of interation strength
 
-#interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
-#J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
-J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
-#J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
-#J = np.array([[0,1],[1,0]]) #J for 2 electron system
+for k in range(1000):
+    print k
+    J = np.zeros((n,n))
 
-n = len(J)
-B = 0.5 #magnetic field strength
+    for j in range(n):
+        i=0
+        while i<j:
+            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+            i+=1
 
-H = hamiltonian(n,J,B)
+    #print J
 
-print H
+    B = 0 #magnetic field strength
 
-eigenvalues, eigenvectors = eigen(H)
+    H = hamiltonian(n,J,B)
 
-eigenvalues = eigenvalues.round(10)
+    #print H
 
-print eigenvalues
+    eigenvalues, eigenvectors = eigen(H)
+
+    eigenvalues = eigenvalues.round(10)
+
+    #print eigenvalues
 
 
-eigenvectors = eigenvectors.round(10)
+    eigenvectors = eigenvectors.round(10)
 
 
 
-g_state = eigenvectors[:,0]
+    g_state = eigenvectors[:,0]
 
-print g_state
+    #print g_state
 
-Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
+    Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
 
-print Sz.round(10)
+    #print Sz.round(10)
