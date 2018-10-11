@@ -56,7 +56,7 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                #print i+1,j+1
+                print i+1,j+1
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
@@ -114,61 +114,81 @@ def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
         Sx[i] = g_state.dot(x_mat.dot(g_state)) #computes <phi0|S_ix|phi0> where phi0 is the ground state eigenvector
     return Sx
 
+def mean_field(n, g_state): #Calculates the expectation values of S_iz for each i
+    mf = 0
+    for k in range(n):
+        order = []
+        for i in range(n):
+            if (k)==i:
+                order.append(s_z)
+            elif (k)==(i+1)%n:
+                order.append(s_z)
+            else:
+                order.append(identity)
+        z_mat = order[n-1]
+        for l in range(n-1):
+            z_mat = np.kron(order[n-l-2],z_mat)
+        mf += g_state.dot(z_mat.dot(g_state))/4 #computes <phi0|S_ix|phi0> where phi0 is the ground state eigenvector
+
+    return mf
+
 
 
 
 
 s_plus = np.array([[0,1],[0,0]]) #spin raising operator in the |up>=(1,0) and |down>=(0,1) basis
 s_minus = np.array([[0,0],[1,0]]) #spin lowering operator in same basis
-s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
+s_z = np.array([[1,0],[0,-1]]) #z projection spin operator*2 in same basis
 s_y = np.array([[0,-1],[1,0]])
 s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
-
 strength = 1 #overall multiplicative factor of interation strength
+n = 10
+J = np.zeros((n,n))
+for i in range(n-1):
+    J[i][i+1] = 1
+J[0][n-1] = 1
 
-for k in range(2):
-    print k
-    J = np.zeros((n,n))
+J= J*strength
 
-    for j in range(n):
-        i=0
-        while i<j:
-            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
-            i+=1
-
-    #print J
-
-    B = 0.1 #magnetic field strength
-
-    H = hamiltonian(n,J,B)
-
-    #print H
-
-    eigenvalues, eigenvectors = eigen(H)
-
-    eigenvalues = eigenvalues.round(10)
-
-    print eigenvalues[0:2]
+#interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
+#J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
+#J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
+#J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
+#J = np.array([[0,1],[1,0]]) #J for 2 electron system
 
 
-    eigenvectors = eigenvectors.round(10)
+B = 0.1 #magnetic field strength
+
+H = hamiltonian(n,J,B)
+
+#print H
+
+eigenvalues, eigenvectors = eigen(H)
+
+eigenvalues = eigenvalues.round(10)
+
+print eigenvalues/n
+
+
+eigenvectors = eigenvectors.round(10)
 
 
 
-    g_state = eigenvectors[:,0]
+g_state = eigenvectors[:,0]
 
-    print g_state
-    print eigenvectors[:,1]
+print g_state
 
-    Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
-    Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
-    Sx = expect_sx(n, g_state)/2
+Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
+Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
+Sx = expect_sx(n, g_state)/2
 
-    print Sz.round(10)
-    print Sy.round(10)
-    print Sx.round(10)
-    print ''
+print Sz.round(10)
+print Sy.round(10)
+print Sx.round(10)
+
+mean = mean_field(n, g_state)
+
+print mean/n

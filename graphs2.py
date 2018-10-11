@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 def plusminus_minusplus(i,j,n): #will calculate S_(i+)S_(j-) + S_(i-)S_(j+)
     order = [] #empty list that will hold the order of the direct product
@@ -56,7 +58,6 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                #print i+1,j+1
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
@@ -118,57 +119,68 @@ def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
 
 
 
+
+
 s_plus = np.array([[0,1],[0,0]]) #spin raising operator in the |up>=(1,0) and |down>=(0,1) basis
 s_minus = np.array([[0,0],[1,0]]) #spin lowering operator in same basis
-s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
+s_z = np.array([[1,0],[0,-1]]) #z projection spin operator*2 in same basis
 s_y = np.array([[0,-1],[1,0]])
 s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
-
 strength = 1 #overall multiplicative factor of interation strength
+n = 12
+sols_even = np.zeros((n-2)/2)
+sols_odd = np.zeros((n-2)/2)
+for i in range(n-2):
+    J = np.zeros((i+3,i+3))
+    for j in range(i+2):
+        J[j][j+1] = 1
 
-for k in range(2):
-    print k
-    J = np.zeros((n,n))
+    J *= strength
 
-    for j in range(n):
-        i=0
-        while i<j:
-            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
-            i+=1
 
-    #print J
+    B = 0 #magnetic field strength
 
-    B = 0.1 #magnetic field strength
-
-    H = hamiltonian(n,J,B)
+    H = hamiltonian(i+3,J,B)
 
     #print H
 
     eigenvalues, eigenvectors = eigen(H)
 
     eigenvalues = eigenvalues.round(10)
+    print i
+    if (i+3)%2==0:
+        sols_odd[i/2] = eigenvalues[0]/(i+3)
+    else:
+        sols_even[i/2] = eigenvalues[0]/(i+3)
+x = np.arange(3,n+1,2)
+y = np.arange(4,n+2,2)
+x1 = np.linspace(2,100,100)
 
-    print eigenvalues[0:2]
 
+test, shite = curve_fit(lambda t,a,b: a*np.exp(b*t), x,(sols_even+0.44314718))
+test2, shite2 = curve_fit(lambda t,a,b: a*np.exp(b*t), y,(sols_odd+0.44314718))
 
-    eigenvectors = eigenvectors.round(10)
+#y1 = test[0]*np.exp(test[1]*x1)-0.44314718
+#y2 = test2[0]*np.exp(test2[1]*x1)-0.44314718
+#y3 = test[0]*np.exp(test[1]*x1)*(np.sin(x1*(np.pi/2)))**2+test2[0]*np.exp(test2[1]*x1)*(np.cos(x1*(np.pi/2)))**2-0.44314718
+y4 = -((x1-1)/x1)/4
+y5 = y4-(2/np.pi-1)/-2
+y6 = y5-0.03262-0.006+8*0.0015+(0.338-0.56+8*0.035)*np.exp(-np.pi/2)
 
-
-
-    g_state = eigenvectors[:,0]
-
-    print g_state
-    print eigenvectors[:,1]
-
-    Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
-    Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
-    Sx = expect_sx(n, g_state)/2
-
-    print Sz.round(10)
-    print Sy.round(10)
-    print Sx.round(10)
-    print ''
+plt.semilogx(x,-sols_even,'o', label = 'Even data')
+plt.semilogx(y,-sols_odd,'o',label = 'Odd data')
+#plt.plot(x1,y1,label = 'Even fit')
+#plt.plot(x1,y2,label = 'Odd fit')
+#plt.plot(x1,y3)
+plt.semilogx(x1,-y4,label = 'Mean field')
+plt.semilogx(x1,-y5,label = 'Spin wave')
+plt.semilogx(x1,-y6,label = 'DMRG')
+plt.semilogx(x1,-np.zeros(100)+0.44314718,label = 'Bethe Ansatz')
+plt.xlabel('N')
+plt.ylabel("$\\frac{-E_0}{N}$")
+plt.title('Ground state energy per particle (all particles spin 1/2) open 1D chain')
+plt.legend()
+plt.show()

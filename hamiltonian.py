@@ -128,26 +128,33 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-strength = 1 #overall multiplicative factor of interation strength
+strength = -1 #overall multiplicative factor of interation strength
+n = 4
+J = np.zeros((n,n))
+for i in range(n-1):
+    J[i][i+1] = 1
+J[0][n-1] = 1
+
+J= J*strength
 
 #interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
 #J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
 #J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
 #J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
-J = np.array([[0,1],[1,0]]) #J for 2 electron system
+#J = np.array([[0,1],[1,0]]) #J for 2 electron system
 
-n = len(J)
+
 B = 0 #magnetic field strength
 
 H = hamiltonian(n,J,B)
 
-print H
+#print H
 
 eigenvalues, eigenvectors = eigen(H)
 
 eigenvalues = eigenvalues.round(10)
 
-print eigenvalues
+print eigenvalues/n
 
 
 eigenvectors = eigenvectors.round(10)
@@ -162,6 +169,19 @@ Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing f
 Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
 Sx = expect_sx(n, g_state)/2
 
-print Sz.round(10)
-print Sy.round(10)
-print Sx.round(10)
+print expect_sz(n, g_state)/2
+print expect_sy(n, g_state)/2
+print expect_sx(n, g_state)/2
+print ''
+print expect_sz(n, eigenvectors[:,1])/2
+print expect_sy(n, eigenvectors[:,1])/2
+print expect_sx(n, eigenvectors[:,1])/2
+print ''
+print expect_sz(n, eigenvectors[:,2])/2
+print expect_sy(n, eigenvectors[:,2])/2
+print expect_sx(n, eigenvectors[:,2])/2
+print ''
+print expect_sz(n, eigenvectors[:,3])/2
+print expect_sy(n, eigenvectors[:,3])/2
+print expect_sx(n, eigenvectors[:,3])/2
+print ''
