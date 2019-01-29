@@ -126,23 +126,44 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
+n = 5 # number of spin sites
 
 strength = 1 #overall multiplicative factor of interation strength
 
-for k in range(2):
-    print k
+for k in range(1):
     J = np.zeros((n,n))
 
+    norm = []
     for j in range(n):
         i=0
         while i<j:
             J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+            norm.append(J[i][j]**2)
             i+=1
-
+    norm_sum = np.sum(norm)
+    J_std = np.std(norm)
+    J /= np.sqrt(norm_sum)
+    #print J_std
     #print J
 
-    B = 0.1 #magnetic field strength
+
+
+    """
+    strength = -1 #overall multiplicative factor of interation strength
+    J = np.zeros((n,n))
+    for i in range(n-1):
+        J[i][i+1] = 1
+    J[0][n-1] = 1
+
+    J= J*strength
+    J = J/np.sqrt(n)
+    """
+
+
+
+
+    B = np.random.normal(0,1) #magnetic field strength
+    B = 0
 
     H = hamiltonian(n,J,B)
 
@@ -152,23 +173,43 @@ for k in range(2):
 
     eigenvalues = eigenvalues.round(10)
 
-    print eigenvalues[0:2]
+    print (eigenvalues)
 
 
-    eigenvectors = eigenvectors.round(10)
+    eigenvectors = eigenvectors.round(8)
 
+    b,c  = np.unique(eigenvalues,return_counts=True)
+    print (np.sort(c))
 
+    d,e  = np.unique(c,return_counts=True)
+    print (d)
+    print (e)
 
     g_state = eigenvectors[:,0]
 
-    print g_state
-    print eigenvectors[:,1]
+    print (g_state)
+    #print eigenvectors[:,1]
+    print (np.sum(eigenvalues))
+    print (np.sum(eigenvalues**2))
+    #print (np.sum(eigenvalues**2)-(0.75*(2**(n-2))))/(B*B)
+    #E_std = np.std(eigenvalues**2)
+    #print E_std*J_std
 
     Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
     Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
     Sx = expect_sx(n, g_state)/2
 
-    print Sz.round(10)
-    print Sy.round(10)
-    print Sx.round(10)
-    print ''
+    """
+    for i in range(2**n):
+        print eigenvalues[i]
+        for j in range(2**n):
+            if eigenvectors[j][i]!=0:
+                print str(bin(j))[2:] + ' ' + str(int(np.signbit(eigenvectors[j][i])))
+        print ' '
+    """
+    b,c  = np.unique(eigenvalues,return_counts=True)
+    print (b)
+    print (c)
+    #print (Sz.round(10))
+    #print Sy.round(10)
+    #print Sx.round(10)

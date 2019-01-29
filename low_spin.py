@@ -1,4 +1,12 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR
+from sklearn.metrics import accuracy_score
+from keras.models import Sequential
+from keras.layers import Dense
+from sklearn.preprocessing import StandardScaler
 
 def plusminus_minusplus(i,j,n): #will calculate S_(i+)S_(j-) + S_(i-)S_(j+)
     order = [] #empty list that will hold the order of the direct product
@@ -56,8 +64,7 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                print i+1,j+1
-                print 4*(J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
+                #print i+1,j+1
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
@@ -119,71 +126,118 @@ def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
 
 
 
-
-
 s_plus = np.array([[0,1],[0,0]]) #spin raising operator in the |up>=(1,0) and |down>=(0,1) basis
 s_minus = np.array([[0,0],[1,0]]) #spin lowering operator in same basis
-s_z = np.array([[1,0],[0,-1]]) #z projection spin operator*2 in same basis
+s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
 s_y = np.array([[0,-1],[1,0]])
 s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-strength = -1 #overall multiplicative factor of interation strength
-n = 3
-J = np.zeros((n,n))
-for i in range(n-1):
-    J[i][i+1] = 1
-J[0][n-1] = 1
+n = 4 # number of spin sites
+n_j = int(n*(n-1)/2)
+print (n_j)
+h = 10000
+n_spins = int(n/2)+1
 
-J= J*strength
+design = np.ndarray(shape = (h,n_j))
+target = np.zeros(h)
 
-#interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
-#J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
-#J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
-J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
-#J = np.array([[0,1],[1,0]]) #J for 2 electron system
+strength = 1 #overall multiplicative factor of interation strength
+
+for k in range(h):
+    J = np.zeros((n,n))
+
+    norm = []
+    p = 0
+    for j in range(n):
+        i=0
+        while i<j:
+            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+            norm.append(J[i][j]**2)
+            i+=1
+    norm_sum = np.sum(norm)
+    J_std = np.std(norm)
+    J /= np.sqrt(norm_sum)
+    for j in range(n):
+        i=0
+        while i<j:
+            design[k][p] = J[i][j]
+            i+=1
+            p+=1
 
 
-B = 0 #magnetic field strength
-
-H = hamiltonian(n,J,B)
-
-#print H
-
-eigenvalues, eigenvectors = eigen(H)
-
-eigenvalues = eigenvalues.round(10)
-
-print eigenvalues/n
 
 
-eigenvectors = eigenvectors.round(10)
+    B = np.random.normal(0,1) #magnetic field strength
+    B = 0
+
+    H = hamiltonian(n,J,B)
+
+    #print H
+
+    eigenvalues, eigenvectors = eigen(H)
+
+    eigenvalues = eigenvalues.round(10)
+
+    b,c  = np.unique(eigenvalues,return_counts=True)
+
+    target[k] = int((c[0]+1)/2)-1
 
 
+# one-hot y
+target_one_hot = np.zeros((h, n_spins), dtype=int)
+for i in range(h):
+    target_one_hot[i, int(target[i])] = 1
 
-g_state = eigenvectors[:,0]
 
-print g_state
+# define the model
+model = Sequential()
 
-Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
-Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
-Sx = expect_sx(n, g_state)/2
+# add layers
+model.add(Dense(2**n,input_dim=n_j, activation='relu'))
+model.add(Dense(2**n, activation='relu'))
+model.add(Dense(units=n_spins, activation='sigmoid'))
+
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy', metrics = ['acc'])
+
+
+X_tv, X_test, y_tv, y_test = train_test_split(design, target_one_hot, test_size=0.2)
+X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
+
+X_mu = np.mean(X_train, axis=0)
+X_std = np.std(X_train, axis=0)
+
+X_train_std = (X_train - X_mu) / X_std
+X_val_std = (X_val - X_mu) / X_std
+X_test_std = (X_test - X_mu) / X_std
+
+
+model_history = model.fit(X_train_std, y_train, epochs=100, verbose=2,validation_data=(X_val_std, y_val), batch_size=32)
+
+plt.figure()
+plt.plot(range(1, len(model_history.history['acc'])+1), model_history.history['acc'], label='Train')
+plt.plot(range(1, len(model_history.history['val_acc'])+1), model_history.history['val_acc'], label='Val')
+plt.legend()
+plt.xlabel('Number of Epochs')
+plt.ylabel('Accuracy')
+
+plt.show()
+
+# Generalization Error
 """
-print expect_sz(n, g_state)/2
-print expect_sy(n, g_state)/2
-print expect_sx(n, g_state)/2
-print ''
-print expect_sz(n, eigenvectors[:,1])/2
-print expect_sy(n, eigenvectors[:,1])/2
-print expect_sx(n, eigenvectors[:,1])/2
-print ''
-print expect_sz(n, eigenvectors[:,2])/2
-print expect_sy(n, eigenvectors[:,2])/2
-print expect_sx(n, eigenvectors[:,2])/2
-print ''
-print expect_sz(n, eigenvectors[:,3])/2
-print expect_sy(n, eigenvectors[:,3])/2
-print expect_sx(n, eigenvectors[:,3])/2
-print ''
+y_test_pred = model.predict(X_test_std)
+y_pred_class = np.argmax(y_test_pred, axis=1)
+y_test_class = np.argmax(y_test, axis=1)
+
+print("Test Accuracy:", accuracy_score(y_true=y_test_class, y_pred=y_pred_class))
+
+plt.figure()
+plt.scatter(y_pred_class, y_test_class)
+plt.xlabel('y_pred')
+plt.ylabel('y_true')
+plt.plot([0,n/2+1], [0,n/2+1], linestyle='dashed', color='k')
+plt.grid()
+plt.show()
 """

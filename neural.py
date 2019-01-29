@@ -177,18 +177,18 @@ for k in range(h):
     eigenvalues, eigenvectors = eigen(H)
 
     eigenvalues = eigenvalues.round(10)
-    target[k] = eigenvalues[-1]
+    target[k] = eigenvalues[0]
 
 
 # define the model
 model = Sequential()
 
 # add layers
-model.add(Dense(n_j,input_dim=n_j, activation='relu'))
-model.add(Dense(4*n_j, activation='relu'))
+model.add(Dense(2**n,input_dim=n_j, activation='relu'))
+model.add(Dense(2**n, activation='relu'))
 model.add(Dense(units=1, activation='linear'))
 
-model.compile(optimizer='adam',
+model.compile(optimizer='rmsprop',
               loss='mse')
 
 
@@ -212,7 +212,7 @@ y_test_std = (y_test - y_mu) / y_std
 print (X_train_std)
 print (y_train_std)
 
-model_history = model.fit(X_train_std, y_train_std, epochs=200, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=400, verbose=2,validation_data=(X_val_std, y_val_std))
 
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')

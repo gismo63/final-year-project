@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
 
 def plusminus_minusplus(i,j,n): #will calculate S_(i+)S_(j-) + S_(i-)S_(j+)
     order = [] #empty list that will hold the order of the direct product
@@ -56,8 +59,7 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                print i+1,j+1
-                print 4*(J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
+                #print i+1,j+1
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
@@ -67,7 +69,7 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
     return H
 
 def eigen(matrix):
-    return np.linalg.eigh(matrix) #calculates eigenvalues and eigenvectors of a hermitian matrix
+    return np.linalg.eigvals(matrix) #calculates eigenvalues and eigenvectors of a hermitian matrix
 
 
 def expect_sz(n, g_state): #Calculates the expectation values of S_iz for each i
@@ -119,71 +121,65 @@ def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
 
 
 
-
-
 s_plus = np.array([[0,1],[0,0]]) #spin raising operator in the |up>=(1,0) and |down>=(0,1) basis
 s_minus = np.array([[0,0],[1,0]]) #spin lowering operator in same basis
-s_z = np.array([[1,0],[0,-1]]) #z projection spin operator*2 in same basis
+s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
 s_y = np.array([[0,-1],[1,0]])
 s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-strength = -1 #overall multiplicative factor of interation strength
-n = 3
+n = 3 # number of spin sites
+
+points = 50
+theta = np.linspace(0,2*np.pi, points)
+phi = np.linspace(0,np.pi, points)
+
+E1_vals = np.zeros(points*points)
+E2_vals = np.zeros(points*points)
+E3_vals = np.zeros(points*points)
+
 J = np.zeros((n,n))
-for i in range(n-1):
-    J[i][i+1] = 1
-J[0][n-1] = 1
+B=0
+x = np.zeros(3)
 
-J= J*strength
+for k in range(points):
+    for l in range(points):
+        x[0] = np.cos(theta[k])*np.sin(phi[l])
+        x[1] = np.sin(theta[k])*np.sin(phi[l])
+        x[2] = np.cos(phi[l])
 
-#interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
-#J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
-#J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
-J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
-#J = np.array([[0,1],[1,0]]) #J for 2 electron system
-
-
-B = 0 #magnetic field strength
-
-H = hamiltonian(n,J,B)
-
-#print H
-
-eigenvalues, eigenvectors = eigen(H)
-
-eigenvalues = eigenvalues.round(10)
-
-print eigenvalues/n
+        counter = 0
+        for j in range(n):
+            i=0
+            while i<j:
+                J[i][j] = x[counter]
+                i+=1
+                counter+=1
 
 
-eigenvectors = eigenvectors.round(10)
+        H = hamiltonian(n,J,B)
+
+        #print H
+
+        eigenvalues = eigen(H)
+
+        eigenvalues = eigenvalues.round(10)
 
 
 
-g_state = eigenvectors[:,0]
+        b,c  = np.unique(eigenvalues,return_counts=True)
+        p = c.argsort()
+        b = b[p]
 
-print g_state
 
-Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
-Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
-Sx = expect_sx(n, g_state)/2
-"""
-print expect_sz(n, g_state)/2
-print expect_sy(n, g_state)/2
-print expect_sx(n, g_state)/2
-print ''
-print expect_sz(n, eigenvectors[:,1])/2
-print expect_sy(n, eigenvectors[:,1])/2
-print expect_sx(n, eigenvectors[:,1])/2
-print ''
-print expect_sz(n, eigenvectors[:,2])/2
-print expect_sy(n, eigenvectors[:,2])/2
-print expect_sx(n, eigenvectors[:,2])/2
-print ''
-print expect_sz(n, eigenvectors[:,3])/2
-print expect_sy(n, eigenvectors[:,3])/2
-print expect_sx(n, eigenvectors[:,3])/2
-print ''
-"""
+        if len(b)==3:
+            print (b[0]+b[1]+2*b[2])
+            E1_vals[k*points+l] = b[0]
+            E2_vals[k*points+l] = b[1]
+            E3_vals[k*points+l] = b[2]
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(xs=E1_vals, ys=E2_vals, zs=E3_vals)
+plt.show()
