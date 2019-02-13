@@ -122,7 +122,13 @@ def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
         Sx[i] = g_state.dot(x_mat.dot(g_state)) #computes <phi0|S_ix|phi0> where phi0 is the ground state eigenvector
     return Sx
 
-
+def polar(n, pol, n_j):
+    cart = 1
+    for i in range(n):
+        cart *= np.sin(pol[i])
+    if n != n_j:
+        cart *= np.cos(pol[n])
+    return cart
 
 
 
@@ -135,7 +141,7 @@ identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
 n = 6 # number of spin sites
-n_j = int(n*(n-1)/2)
+n_j = int(n*(n-1)/2)-1
 print (n_j)
 h = 10000
 n_spins = int(n/2)+1
@@ -147,22 +153,13 @@ strength = 1 #overall multiplicative factor of interation strength
 
 for k in range(h):
     J = np.zeros((n,n))
-
-    norm = []
     p = 0
+    design[k] = np.random.rand(n_j)*np.pi
+
     for j in range(n):
         i=0
         while i<j:
-            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
-            norm.append(J[i][j]**2)
-            i+=1
-    norm_sum = np.sum(norm)
-    J_std = np.std(norm)
-    J /= np.sqrt(norm_sum)
-    for j in range(n):
-        i=0
-        while i<j:
-            design[k][p] = J[i][j]
+            J[i][j] = polar(p,design[k]) # random number with normal distribution centered on 0, standard deviation 1
             i+=1
             p+=1
 

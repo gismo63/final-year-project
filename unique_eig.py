@@ -184,12 +184,11 @@ for k in range(h):
     #print H
 
     eigenvalues, eigenvectors = eigen(H)
-    eigenvalues = eigenvalues.round(8)
+    eigenvalues = eigenvalues.round(9)
     b,c  = np.unique(eigenvalues,return_counts=True)
     #p = c.argsort()
     #b = b[p]
 
-    eigenvalues = eigenvalues.round(10)
     target[k] = b
 
 
@@ -223,7 +222,7 @@ y_val_std = (y_val - y_mu) / y_std
 y_test_std = (y_test - y_mu) / y_std
 
 
-model_history = model.fit(X_train_std, y_train_std, epochs=400, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=200, verbose=2,validation_data=(X_val_std, y_val_std))
 
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')

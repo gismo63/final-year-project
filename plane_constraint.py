@@ -3,10 +3,17 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVR
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from keras.models import Sequential
 from keras.layers import Dense
-from sklearn.preprocessing import StandardScaler
+import operator as op
+from functools import reduce
+
+def ncr(n, r):
+    r = min(r, n-r)
+    numer = reduce(op.mul, range(n, n-r, -1), 1)
+    denom = reduce(op.mul, range(1, r+1), 1)
+    return numer / denom
 
 def plusminus_minusplus(i,j,n): #will calculate S_(i+)S_(j-) + S_(i-)S_(j+)
     order = [] #empty list that will hold the order of the direct product
@@ -122,7 +129,25 @@ def expect_sx(n, g_state): #Calculates the expectation values of S_ix for each i
         Sx[i] = g_state.dot(x_mat.dot(g_state)) #computes <phi0|S_ix|phi0> where phi0 is the ground state eigenvector
     return Sx
 
+def polar(n, pol, n_j):
+    cart = 1
+    for i in range(n):
+        cart *= np.sin(pol[i])
+    if n != n_j:
+        cart *= np.cos(pol[n])
+    return cart
 
+def gram_schmidt(basis,m):
+    gs_basis = np.zeros((m,m))
+    gs_basis[0] = basis[0]/np.linalg.norm(basis[0])
+    temp = np.zeros(m)
+    for i in range(1,m):
+        temp = basis[i]
+        for j in range(1,i):
+            temp -= (np.dot(gs_basis[j],basis[i])/np.dot(basis[j],basis[j]))*gs_basis[j]
+        temp /= np.linalg.norm(temp)
+        gs_basis[i] = temp
+    return gs_basis
 
 
 
@@ -134,35 +159,25 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 6 # number of spin sites
-n_j = int(n*(n-1)/2)
+n = 3 # number of spin sites
+n_j = int((n*(n-1)/2))-1
 print (n_j)
-h = 10000
-n_spins = int(n/2)+1
+h = 1000
 
 design = np.ndarray(shape = (h,n_j))
-target = np.zeros(h)
+target = np.ndarray(shape = (h,2**n-2))
 
 strength = 1 #overall multiplicative factor of interation strength
 
 for k in range(h):
     J = np.zeros((n,n))
-
-    norm = []
     p = 0
+    design[k] = np.random.rand(n_j)*np.pi
+
     for j in range(n):
         i=0
         while i<j:
-            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
-            norm.append(J[i][j]**2)
-            i+=1
-    norm_sum = np.sum(norm)
-    J_std = np.std(norm)
-    J /= np.sqrt(norm_sum)
-    for j in range(n):
-        i=0
-        while i<j:
-            design[k][p] = J[i][j]
+            J[i][j] = polar(p,design[k],n_j) # random number with normal distribution centered on 0, standard deviation 1
             i+=1
             p+=1
 
@@ -177,33 +192,38 @@ for k in range(h):
     #print H
 
     eigenvalues, eigenvectors = eigen(H)
-
     eigenvalues = eigenvalues.round(10)
+    #target[k] = eigenvalues
 
-    b,c  = np.unique(eigenvalues,return_counts=True)
+basis = np.zeros((2**n,2**n))
+basis[0] = np.ones(2**n)
+for i in range(1,2**n):
+    basis[i,0] = -1
+    basis[i,i] = 1
 
-    target[k] = int((c[0]+1)/2)-1
-
-
-# one-hot y
-target_one_hot = np.zeros((h, n_spins), dtype=int)
-for i in range(h):
-    target_one_hot[i, int(target[i])] = 1
+gs_basis = gram_schmidt(basis,2**n)
 
 
+gs_t = np.transpose(gs_basis)
+gs_eigen = np.dot(gs_basis,eigenvalues)
+print (gs_eigen)
+print (np.sum(gs_eigen[1:]**2))
+print (np.sum(eigenvalues**2))
+
+"""
 # define the model
 model = Sequential()
 
 # add layers
 model.add(Dense(2**n,input_dim=n_j, activation='relu'))
 model.add(Dense(2**n, activation='relu'))
-model.add(Dense(units=n_spins, activation='sigmoid'))
+model.add(Dense(units=2**n, activation='linear'))
 
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy', metrics = ['acc'])
+model.compile(optimizer='rmsprop',
+              loss='mse')
 
 
-X_tv, X_test, y_tv, y_test = train_test_split(design, target_one_hot, test_size=0.2)
+X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
 X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
 
 X_mu = np.mean(X_train, axis=0)
@@ -213,31 +233,37 @@ X_train_std = (X_train - X_mu) / X_std
 X_val_std = (X_val - X_mu) / X_std
 X_test_std = (X_test - X_mu) / X_std
 
+y_mu = np.mean(y_train, axis=0)
+y_std = np.std(y_train, axis=0)
 
-model_history = model.fit(X_train_std, y_train, epochs=100, verbose=2,validation_data=(X_val_std, y_val), batch_size=32)
+y_train_std = (y_train - y_mu) / y_std
+y_val_std = (y_val - y_mu) / y_std
+y_test_std = (y_test - y_mu) / y_std
+
+
+model_history = model.fit(X_train_std, y_train_std, epochs=200, verbose=2,validation_data=(X_val_std, y_val_std))
 
 plt.figure()
-plt.plot(range(1, len(model_history.history['acc'])+1), model_history.history['acc'], label='Train')
-plt.plot(range(1, len(model_history.history['val_acc'])+1), model_history.history['val_acc'], label='Val')
+plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
+plt.plot(range(1, len(model_history.history['val_loss'])+1), model_history.history['val_loss'], label='Val')
 plt.legend()
 plt.xlabel('Number of Epochs')
-plt.ylabel('Accuracy')
+plt.ylabel('Loss')
 
 plt.show()
 
 # Generalization Error
 
-y_test_pred = model.predict(X_test_std)
-y_pred_class = np.argmax(y_test_pred, axis=1)
-y_test_class = np.argmax(y_test, axis=1)
+y_test_pred = y_mu + model.predict(X_test_std)*y_std
+print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
+print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
-print("Test Accuracy:", accuracy_score(y_true=y_test_class, y_pred=y_pred_class))
-"""
+
 plt.figure()
-plt.scatter(y_pred_class, y_test_class)
+plt.scatter(y_test_pred, y_test)
 plt.xlabel('y_pred')
 plt.ylabel('y_true')
-plt.plot([0,n/2+1], [0,n/2+1], linestyle='dashed', color='k')
+plt.plot([-2,2], [-2,2], linestyle='dashed', color='k')
 plt.grid()
 plt.show()
 """

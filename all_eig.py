@@ -133,7 +133,7 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
+n = 3 # number of spin sites
 n_j = int(n*(n-1)/2)
 print (n_j)
 h = 10000
@@ -212,7 +212,7 @@ y_test_std = (y_test - y_mu) / y_std
 print (X_train_std)
 print (y_train_std)
 
-model_history = model.fit(X_train_std, y_train_std, epochs=400, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=200, verbose=2,validation_data=(X_val_std, y_val_std))
 
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
@@ -228,6 +228,9 @@ plt.show()
 y_test_pred = y_mu + model.predict(X_test_std)*y_std
 print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
 print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
+
+print(y_test_pred[34])
+print(y_test[34])
 
 plt.figure()
 plt.scatter(y_test_pred, y_test)
