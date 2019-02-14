@@ -175,9 +175,10 @@ n = 3 # number of spin sites
 n_j = int((n*(n-1)/2))-1
 print (n_j)
 h = 10000
+n_unique = int(ncr(n,int(n/2)))
 
 design = np.ndarray(shape = (h,n_j))
-target = np.ndarray(shape = (h,2**n-2))
+target = np.ndarray(shape = (h,n_unique-2))
 
 strength = 1 #overall multiplicative factor of interation strength
 
@@ -205,19 +206,19 @@ for k in range(h):
 
     eigenvalues, eigenvectors = eigen(H)
     eigenvalues = eigenvalues.round(10)
+    b,c  = np.unique(eigenvalues,return_counts=True)
 
-
-    basis = np.zeros((2**n,2**n))
-    basis[0] = np.ones(2**n)
-    for i in range(1,2**n):
-        basis[i,0] = -1
+    basis = np.zeros((n_unique,n_unique))
+    basis[0] = c
+    for i in range(1,n_unique):
+        basis[i,0] = -c[i]/c[0]
         basis[i,i] = 1
 
-    gs_basis = gram_schmidt(basis,2**n)
+    gs_basis = gram_schmidt(b,n_unique)
 
 
     gs_t = np.transpose(gs_basis)
-    gs_eigen = np.dot(gs_basis,eigenvalues)
+    gs_eigen = np.dot(gs_basis,b)
 
     pol_eig = polar_eig(gs_eigen[1:])
     target[k] = pol_eig
@@ -227,9 +228,9 @@ for k in range(h):
 model = Sequential()
 
 # add layers
-model.add(Dense(2**n-2,input_dim=n_j, activation='relu'))
-model.add(Dense(2**n-2, activation='relu'))
-model.add(Dense(units=2**n-2, activation='linear'))
+model.add(Dense(2**n,input_dim=n_j, activation='relu'))
+model.add(Dense(2**n, activation='relu'))
+model.add(Dense(units=n_unique-2, activation='linear'))
 
 model.compile(optimizer='rmsprop',
               loss='mse')
