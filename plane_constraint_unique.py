@@ -163,6 +163,8 @@ def polar_eig(x):
     return pol_eig
 
 
+
+
 s_plus = np.array([[0,1],[0,0]]) #spin raising operator in the |up>=(1,0) and |down>=(0,1) basis
 s_minus = np.array([[0,0],[1,0]]) #spin lowering operator in same basis
 s_z = np.array([[1,0],[0,-1]]) #z projection spin operator *2 in same basis
@@ -171,7 +173,7 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 3 # number of spin sites
+n = 4 # number of spin sites
 n_j = int((n*(n-1)/2))-1
 print (n_j)
 h = 10000
@@ -205,7 +207,7 @@ for k in range(h):
     #print H
 
     eigenvalues, eigenvectors = eigen(H)
-    eigenvalues = eigenvalues.round(10)
+    eigenvalues = eigenvalues.round(8)
     b,c  = np.unique(eigenvalues,return_counts=True)
 
     basis = np.zeros((n_unique,n_unique))
@@ -214,14 +216,22 @@ for k in range(h):
         basis[i,0] = -c[i]/c[0]
         basis[i,i] = 1
 
-    gs_basis = gram_schmidt(b,n_unique)
+    gs_basis = gram_schmidt(basis,n_unique)
 
 
     gs_t = np.transpose(gs_basis)
     gs_eigen = np.dot(gs_basis,b)
 
     pol_eig = polar_eig(gs_eigen[1:])
+    """
+    print (pol_eig)
+    print (polar(0,pol_eig,1))
+    print (polar(1,pol_eig,1))
+    print (b)
+    print (gs_eigen)
+    """
     target[k] = pol_eig
+
 
 
 # define the model

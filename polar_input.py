@@ -149,7 +149,7 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 6 # number of spin sites
+n = 3 # number of spin sites
 n_j = int((n*(n-1)/2))-1
 print (n_j)
 h = 10000
@@ -168,7 +168,7 @@ for k in range(h):
     for j in range(n):
         i=0
         while i<j:
-            J[i][j] = polar(p,design[k]) # random number with normal distribution centered on 0, standard deviation 1
+            J[i][j] = polar(p,design[k],n_j) # random number with normal distribution centered on 0, standard deviation 1
             i+=1
             p+=1
 
