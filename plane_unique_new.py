@@ -175,10 +175,10 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n =3 # number of spin sites
-n_j = int((n*(n-1)/2))-1
+n = 5 # number of spin sites
+n_j = int((n*(n-1)/2))
 print (n_j)
-h = 10000
+h = 2000
 n_unique = int(ncr(n,int(n/2)))
 r = np.sqrt((2**(n-2))*(0.75))
 
@@ -189,13 +189,22 @@ strength = 1 #overall multiplicative factor of interation strength
 
 for k in range(h):
     J = np.zeros((n,n))
-    p = 0
-    design[k] = np.random.rand(n_j)*np.pi
 
+    norm = []
+    p = 0
     for j in range(n):
         i=0
         while i<j:
-            J[i][j] = polar(p,design[k],n_j) # random number with normal distribution centered on 0, standard deviation 1
+            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+            norm.append(J[i][j]**2)
+            i+=1
+    norm_sum = np.sum(norm)
+    J_std = np.std(norm)
+    J /= np.sqrt(norm_sum)
+    for j in range(n):
+        i=0
+        while i<j:
+            design[k][p] = J[i][j]
             i+=1
             p+=1
 
@@ -258,20 +267,28 @@ model.compile(optimizer='rmsprop',
 X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
 X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
 
+X_train_std = X_train
+X_val_std = X_val
+X_test_std = X_test
+
+y_train_std = y_train
+y_val_std = y_val
+y_test_std = y_test
+
 X_mu = np.mean(X_train, axis=0)
 X_std = np.std(X_train, axis=0)
 
 X_train_std = (X_train - X_mu) / X_std
 X_val_std = (X_val - X_mu) / X_std
 X_test_std = (X_test - X_mu) / X_std
-
+"""
 y_mu = np.mean(y_train, axis=0)
 y_std = np.std(y_train, axis=0)
 
 y_train_std = (y_train - y_mu) / y_std
 y_val_std = (y_val - y_mu) / y_std
 y_test_std = (y_test - y_mu) / y_std
-
+"""
 
 model_history = model.fit(X_train_std, y_train_std, epochs=200, verbose=2,validation_data=(X_val_std, y_val_std))
 
@@ -286,7 +303,8 @@ plt.show()
 
 # Generalization Error
 
-y_test_pred = y_mu + model.predict(X_test_std)*y_std
+#y_test_pred = y_mu + model.predict(X_test_std)*y_std
+y_test_pred = model.predict(X_test_std)
 print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
 print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
