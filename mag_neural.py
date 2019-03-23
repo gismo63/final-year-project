@@ -1,4 +1,11 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from keras.models import Sequential
+from keras.layers import Dense
 
 def plusminus_minusplus(i,j,n): #will calculate S_(i+)S_(j-) + S_(i-)S_(j+)
     order = [] #empty list that will hold the order of the direct product
@@ -35,7 +42,7 @@ def zz(i,j,n):
 
     return z_mat
 
-def mag_field(n): #returns the sum over all S_iz which when multiplied by the field strength gives the contribution of the magnetic field to the hamiltonian
+def mag_field(B,n): #returns the sum over all S_iz which when multiplied by the field strength gives the contribution of the magnetic field to the hamiltonian
     field = np.zeros((2**n,2**n))
     for i in range(n):
         order = []
@@ -47,7 +54,7 @@ def mag_field(n): #returns the sum over all S_iz which when multiplied by the fi
         z_mat = order[n-1]
         for l in range(n-1):
             z_mat = np.kron(order[n-l-2],z_mat)
-        field += z_mat
+        field += B[i]*z_mat
     return field
 
 def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
@@ -56,12 +63,12 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                #print i+1,j+1
+                #print (i+1,j+1)
+                #print (4*(J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.))
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
-    if B!=0:
-        H = np.add(H, B*mag_field(n)/2) #adds the magnetic field contribution to the hamiltonian, the factor of 1/2 is to account for the lack of this factor in the definition of s_z
+    H = np.add(H, mag_field(B,n)/2) #adds the magnetic field contribution to the hamiltonian, the factor of 1/2 is to account for the lack of this factor in the definition of s_z
 
     return H
 
@@ -126,44 +133,53 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 3 # number of spin sites
 
-strength = 1 #overall multiplicative factor of interation strength
+n = 4
+h = 100000
 
-for k in range(3):
-    J = np.zeros((n,n))
+np.random.seed(63)
 
-    norm = []
+J = np.zeros((n,n))
+for i in range(n-1):
+    J[i][i+1] = 1
+J[0][n-1] = 1
+strength = 1./np.sqrt(n) #overall multiplicative factor of interation strength
+#J= J*strength
+
+
+
+"""
+J = np.zeros((n,n))
+
+norm = []
+p = 0
+for j in range(n):
+    i=0
+    while i<j:
+        J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+        norm.append(J[i][j]**2)
+        i+=1
+norm_sum = np.sum(norm)
+J_std = np.std(norm)
+#J /= np.sqrt(norm_sum)
+"""
+H = hamiltonian(n,J,np.zeros(n))
+homo_val,homo_vec = eigen(H)
+homo_gstate = homo_val[0]
+
+
+design = np.ndarray(shape = (h,n))
+target = np.zeros(h)
+
+
+
+for k in range(h):
+    #B = np.random.normal(0,0.1,n) #magnetic field strength
+    B = np.random.uniform(-0.1,0.1,n) #magnetic field strength
+    B_sq = np.dot(B,B)
     for j in range(n):
-        i=0
-        while i<j:
-            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
-            norm.append(J[i][j]**2)
-            i+=1
-    norm_sum = np.sum(norm)
-    J_std = np.std(norm)
-    J /= np.sqrt(norm_sum)
-    #print J_std
-    #print J
+        design[k][j] = B[j]
 
-
-
-    """
-    strength = -1 #overall multiplicative factor of interation strength
-    J = np.zeros((n,n))
-    for i in range(n-1):
-        J[i][i+1] = 1
-    J[0][n-1] = 1
-
-    J= J*strength
-    J = J/np.sqrt(n)
-    """
-
-
-
-
-    B = np.random.normal(0,1) #magnetic field strength
-    B = 0
 
     H = hamiltonian(n,J,B)
 
@@ -172,52 +188,75 @@ for k in range(3):
     eigenvalues, eigenvectors = eigen(H)
 
     eigenvalues = eigenvalues.round(10)
+    target[k] = eigenvalues[0]-homo_gstate
 
-    #print (eigenvalues)
+
+# define the model
+model = Sequential()
+
+# add layers
+model.add(Dense(n,input_dim=n, activation='relu'))
+model.add(Dense(n, activation='relu'))
+#model.add(Dense(n, activation='relu'))
+model.add(Dense(units=1, activation='linear'))
+
+model.compile(optimizer='adam',
+              loss='mse')
 
 
-    eigenvectors = eigenvectors.round(8)
+X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
+X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
 
-    b,c  = np.unique(eigenvalues,return_counts=True)
-    #print (np.sort(c))
+X_train_std = X_train
+X_val_std = X_val
+X_test_std = X_test
 
-    d,e  = np.unique(c,return_counts=True)
-    #print (d)
-    #print (e)
 
-    g_state = eigenvectors[:,0]
+X_mu = np.mean(X_train, axis=0)
+X_std = np.std(X_train, axis=0)
 
-    print (eigenvectors[:,0])
-    print (eigenvectors[:,1])
-    print (eigenvectors[:,2])
-    print (eigenvectors[:,3])
-    print (eigenvectors[:,4])
-    print (eigenvectors[:,5])
-    print (eigenvectors[:,6])
-    print (eigenvectors[:,7])
-    print ("\n")
-    #print eigenvectors[:,1]
-    #print (np.sum(eigenvalues))
-    #print (np.sum(eigenvalues**2))
-    #print (np.sum(eigenvalues**2)-(0.75*(2**(n-2))))/(B*B)
-    #E_std = np.std(eigenvalues**2)
-    #print E_std*J_std
+X_train_std = (X_train - X_mu) / X_std
+X_val_std = (X_val - X_mu) / X_std
+X_test_std = (X_test - X_mu) / X_std
 
-    Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
-    Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
-    Sx = expect_sx(n, g_state)/2
+y_train_std = y_train
+y_val_std = y_val
+y_test_std = y_test
 
-    """
-    for i in range(2**n):
-        print eigenvalues[i]
-        for j in range(2**n):
-            if eigenvectors[j][i]!=0:
-                print str(bin(j))[2:] + ' ' + str(int(np.signbit(eigenvectors[j][i])))
-        print ' '
-    """
-    b,c  = np.unique(eigenvalues,return_counts=True)
-    #print (b)
-    #print (c)
-    #print (Sz.round(10))
-    #print Sy.round(10)
-    #print Sx.round(10)
+y_mu = np.mean(y_train, axis=0)
+y_std = np.std(y_train, axis=0)
+
+y_train_std = (y_train - y_mu) / y_std
+y_val_std = (y_val - y_mu) / y_std
+y_test_std = (y_test - y_mu) / y_std
+
+
+
+
+model_history = model.fit(X_train_std, y_train_std, epochs=100, verbose=2,validation_data=(X_val_std, y_val_std))
+#model.save('low4.h5')
+
+
+plt.figure()
+plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
+plt.plot(range(1, len(model_history.history['val_loss'])+1), model_history.history['val_loss'], label='Val')
+plt.legend()
+plt.xlabel('Number of Epochs')
+plt.ylabel('Loss')
+
+plt.show()
+
+# Generalization Error
+
+y_test_pred = y_mu + model.predict(X_test_std)*y_std
+#y_test_pred = model.predict(X_test_std)
+print("Generalization MSE: ", (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
+print("Generalization MAE: ", (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
+
+plt.figure()
+plt.scatter(y_test_pred, y_test)
+plt.xlabel('y_pred')
+plt.ylabel('y_true')
+plt.plot([0,-0.3], [0,-0.3], linestyle='dashed', color='k')
+plt.grid()
+plt.show()

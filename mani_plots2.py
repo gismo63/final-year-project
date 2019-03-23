@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
 
 def plusminus_minusplus(i,j,n): #will calculate S_(i+)S_(j-) + S_(i-)S_(j+)
     order = [] #empty list that will hold the order of the direct product
@@ -66,7 +69,7 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
     return H
 
 def eigen(matrix):
-    return np.linalg.eigh(matrix) #calculates eigenvalues and eigenvectors of a hermitian matrix
+    return np.linalg.eigvals(matrix) #calculates eigenvalues and eigenvectors of a hermitian matrix
 
 
 def expect_sz(n, g_state): #Calculates the expectation values of S_iz for each i
@@ -128,96 +131,59 @@ identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 n = 3 # number of spin sites
 
-strength = 1 #overall multiplicative factor of interation strength
+points = 70
+theta = np.linspace(0,2*np.pi, points)
+phi = np.linspace(0,np.pi, points)
 
-for k in range(3):
-    J = np.zeros((n,n))
+E1_vals = np.zeros(points*points)
+E2_vals = np.zeros(points*points)
+E3_vals = np.zeros(points*points)
 
-    norm = []
-    for j in range(n):
-        i=0
-        while i<j:
-            J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
-            norm.append(J[i][j]**2)
-            i+=1
-    norm_sum = np.sum(norm)
-    J_std = np.std(norm)
-    J /= np.sqrt(norm_sum)
-    #print J_std
-    #print J
+J = np.zeros((n,n))
+B=0
+x = np.zeros(3)
 
-
-
-    """
-    strength = -1 #overall multiplicative factor of interation strength
-    J = np.zeros((n,n))
-    for i in range(n-1):
-        J[i][i+1] = 1
-    J[0][n-1] = 1
-
-    J= J*strength
-    J = J/np.sqrt(n)
-    """
+for k in range(points):
+    for l in range(points):
+        norm = []
+        for j in range(n):
+            i=0
+            while i<j:
+                J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+                norm.append(J[i][j]**2)
+                i+=1
+        norm_sum = np.sum(norm)
+        J_std = np.std(norm)
+        J /= np.sqrt(norm_sum)
 
 
+        H = hamiltonian(n,J,B)
+
+        #print H
+
+        eigenvalues = eigen(H)
+
+        eigenvalues = eigenvalues.round(10)
 
 
-    B = np.random.normal(0,1) #magnetic field strength
-    B = 0
 
-    H = hamiltonian(n,J,B)
-
-    #print H
-
-    eigenvalues, eigenvectors = eigen(H)
-
-    eigenvalues = eigenvalues.round(10)
-
-    #print (eigenvalues)
+        b,c  = np.unique(eigenvalues,return_counts=True)
+        p = c.argsort()
+        b = b[p]
 
 
-    eigenvectors = eigenvectors.round(8)
+        if len(b)==3:
+            print (b[0]+b[1]+2*b[2])
+            E1_vals[k*points+l] = b[0]
+            E2_vals[k*points+l] = b[1]
+            E3_vals[k*points+l] = b[2]
 
-    b,c  = np.unique(eigenvalues,return_counts=True)
-    #print (np.sort(c))
-
-    d,e  = np.unique(c,return_counts=True)
-    #print (d)
-    #print (e)
-
-    g_state = eigenvectors[:,0]
-
-    print (eigenvectors[:,0])
-    print (eigenvectors[:,1])
-    print (eigenvectors[:,2])
-    print (eigenvectors[:,3])
-    print (eigenvectors[:,4])
-    print (eigenvectors[:,5])
-    print (eigenvectors[:,6])
-    print (eigenvectors[:,7])
-    print ("\n")
-    #print eigenvectors[:,1]
-    #print (np.sum(eigenvalues))
-    #print (np.sum(eigenvalues**2))
-    #print (np.sum(eigenvalues**2)-(0.75*(2**(n-2))))/(B*B)
-    #E_std = np.std(eigenvalues**2)
-    #print E_std*J_std
-
-    Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
-    Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value
-    Sx = expect_sx(n, g_state)/2
-
-    """
-    for i in range(2**n):
-        print eigenvalues[i]
-        for j in range(2**n):
-            if eigenvectors[j][i]!=0:
-                print str(bin(j))[2:] + ' ' + str(int(np.signbit(eigenvectors[j][i])))
-        print ' '
-    """
-    b,c  = np.unique(eigenvalues,return_counts=True)
-    #print (b)
-    #print (c)
-    #print (Sz.round(10))
-    #print Sy.round(10)
-    #print Sx.round(10)
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(xs=E1_vals, ys=E2_vals, zs=E3_vals)
+ax.set_xlabel("$E_1$")
+ax.set_ylabel("$E_2$")
+ax.set_zlabel("$E_3$")
+ax.set_title("Unique Eigenvalues for n=3 for all values of $J_{ij}$")
+plt.savefig('n3eig_labeled.eps', format='eps', dpi=1000)
+plt.show()

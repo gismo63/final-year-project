@@ -196,7 +196,7 @@ y_test_std = (y_test - y_mu) / y_std
 train_mse = []
 val_mse = []
 
-Cs = np.logspace(-1,5,20)
+Cs = np.logspace(-1,3,20)
 
 for C in Cs:
     model = SVR()

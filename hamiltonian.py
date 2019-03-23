@@ -56,8 +56,8 @@ def hamiltonian(n,J,B): #calculates the Hamiltonian for the Heisenberg model
         i=0
         while i<j: #only want to consider each interaction once and don't want i=j
             if J[i][j] != 0: #check if the spins interact at all
-                print i+1,j+1
-                print 4*(J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
+                print (i+1,j+1)
+                print (4*(J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.))
                 H += (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
                 #print (J[i][j])*(plusminus_minusplus(i,j,n)/2. + zz(i,j,n)/4.)
             i += 1
@@ -129,8 +129,8 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-strength = -1 #overall multiplicative factor of interation strength
-n = 3
+strength = 1./2 #overall multiplicative factor of interation strength
+n = 4
 J = np.zeros((n,n))
 for i in range(n-1):
     J[i][i+1] = 1
@@ -141,21 +141,26 @@ J= J*strength
 #interaction strength where J[i][j] represents the strength of the interaction between particle i and particle j
 #J = strength*np.array([[0,1,0,0,1],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,0,0]]) #J for 5 electron chain with periodic boundary conditions
 #J = strength*np.array([[0,1,0,1],[0,0,1,0],[0,0,0,1],[0,0,0,0]]) #J for 4 electron chain with periodic boundary conditions
-J = strength*np.array([[0,1,1],[0,0,1],[0,0,0]])
+#J = strength*np.array([[0,1.,1.],[0,0,1.],[0,0,0]])
 #J = np.array([[0,1],[1,0]]) #J for 2 electron system
+
 
 
 B = 0 #magnetic field strength
 
 H = hamiltonian(n,J,B)
 
-#print H
+
+print (H)
+print (np.dot(H,H))
+print (np.trace(H))
+print (np.trace(np.dot(H,H)))
 
 eigenvalues, eigenvectors = eigen(H)
 
 eigenvalues = eigenvalues.round(10)
 
-print eigenvalues/n
+print (eigenvalues)
 
 
 eigenvectors = eigenvectors.round(10)
@@ -164,7 +169,7 @@ eigenvectors = eigenvectors.round(10)
 
 g_state = eigenvectors[:,0]
 
-print g_state
+print (g_state)
 
 Sz = expect_sz(n, g_state)/2 #divide by 2 to account for factor of 1/2 missing from s_z definition
 Sy = expect_sy(n, g_state)/2 # there is also a factor of i missing from this expectation value

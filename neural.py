@@ -133,10 +133,10 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 3 # number of spin sites
+n = 4 # number of spin sites
 n_j = int(n*(n-1)/2)
 print (n_j)
-h = 6000
+h = 10000
 
 design = np.ndarray(shape = (h,n_j))
 target = np.zeros(h)
@@ -184,35 +184,47 @@ for k in range(h):
 model = Sequential()
 
 # add layers
-model.add(Dense(2**n,input_dim=n_j, activation='relu'))
-model.add(Dense(2**n, activation='relu'))
+model.add(Dense(2**(n+2),input_dim=n_j, activation='relu'))
+model.add(Dense(2**(n+2), activation='relu'))
 model.add(Dense(units=1, activation='linear'))
 
-model.compile(optimizer='rmsprop',
+model.compile(optimizer='adam',
               loss='mse')
 
 
 X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
 X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
 
+X_train_std = X_train
+X_val_std = X_val
+X_test_std = X_test
+
+"""
 X_mu = np.mean(X_train, axis=0)
 X_std = np.std(X_train, axis=0)
 
 X_train_std = (X_train - X_mu) / X_std
 X_val_std = (X_val - X_mu) / X_std
 X_test_std = (X_test - X_mu) / X_std
-
+"""
+y_train_std = y_train
+y_val_std = y_val
+y_test_std = y_test
+"""
 y_mu = np.mean(y_train, axis=0)
 y_std = np.std(y_train, axis=0)
 
 y_train_std = (y_train - y_mu) / y_std
 y_val_std = (y_val - y_mu) / y_std
 y_test_std = (y_test - y_mu) / y_std
+"""
 
 print (X_train_std)
 print (y_train_std)
 
-model_history = model.fit(X_train_std, y_train_std, epochs=200, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=100, verbose=2,validation_data=(X_val_std, y_val_std))
+#model.save('low4.h5')
+
 
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
@@ -225,7 +237,7 @@ plt.show()
 
 # Generalization Error
 
-y_test_pred = y_mu + model.predict(X_test_std)*y_std
+y_test_pred = model.predict(X_test_std)
 print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
 print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 

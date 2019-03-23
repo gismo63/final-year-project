@@ -212,8 +212,11 @@ for k in range(h):
     eigenvalues, eigenvectors = eigen(H)
     eigenvalues = eigenvalues.round(8)
     b,c  = np.unique(eigenvalues,return_counts=True)
+    #p = c.argsort()
     c_sr = np.sqrt(c)
     b = b*c_sr
+    #c = c[p]
+    #b = b[p]
 
     basis = np.zeros((n_unique,n_unique))
     basis[0] = c_sr
