@@ -133,10 +133,10 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 5
-h = 10000
-"""
-np.random.seed(63)
+n = 8
+h = 100000
+
+np.random.seed(634)
 
 J = np.zeros((n,n))
 for i in range(n-1):
@@ -145,9 +145,9 @@ J[0][n-1] = 1
 strength = 1./np.sqrt(n) #overall multiplicative factor of interation strength
 J= J*strength
 
+
+
 """
-
-
 J = np.zeros((n,n))
 
 norm = []
@@ -189,7 +189,10 @@ for k in range(h):
 
     eigenvalues = eigenvalues.round(10)
     target[k] = B
+"""
 
+design = np.load('n8spin_design.npy')
+target = np.load('n8B_design.npy')
 
 # define the model
 model = Sequential()
@@ -203,8 +206,8 @@ model.compile(optimizer='adam',
               loss='mse')
 
 
-X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
-X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
+X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2,random_state = 634)
+X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2,random_state = 634)
 
 X_train_std = X_train
 X_val_std = X_val
@@ -232,7 +235,7 @@ y_test_std = (y_test - y_mu) / y_std
 
 
 
-model_history = model.fit(X_train_std, y_train_std, epochs=100, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=20, verbose=2,validation_data=(X_val_std, y_val_std))
 #model.save('low4.h5')
 
 
@@ -253,9 +256,10 @@ print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_tes
 print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
 plt.figure()
-plt.scatter(y_test_pred, y_test)
-plt.xlabel('y_pred')
-plt.ylabel('y_true')
-plt.plot([0,-0.3], [0,-0.3], linestyle='dashed', color='k')
+plt.scatter(y_test_pred[:5000], y_test[:5000], s=1)
+plt.xlabel('Predicted $B_i$')
+plt.ylabel('True $B_i$')
+plt.plot([0.2,-0.2], [0.2,-0.2], linestyle='dashed', color='k')
 plt.grid()
+plt.savefig('8Nspin-mag.eps', format='eps', dpi=1200)
 plt.show()

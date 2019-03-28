@@ -134,10 +134,10 @@ identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
 
-n = 4
+n = 8
 h = 100000
 
-np.random.seed(63)
+np.random.seed(634)
 
 J = np.zeros((n,n))
 for i in range(n-1):
@@ -162,7 +162,7 @@ for j in range(n):
 norm_sum = np.sum(norm)
 J_std = np.std(norm)
 #J /= np.sqrt(norm_sum)
-"""
+
 H = hamiltonian(n,J,np.zeros(n))
 homo_val,homo_vec = eigen(H)
 homo_gstate = homo_val[0]
@@ -189,14 +189,18 @@ for k in range(h):
 
     eigenvalues = eigenvalues.round(10)
     target[k] = eigenvalues[0]-homo_gstate
+"""
 
-
+design = np.load('n8B_design.npy')
+spin = np.load('n8spin_design.npy')
+target = np.load('n8B_target.npy')
+"""
 # define the model
 model = Sequential()
 
 # add layers
-model.add(Dense(n,input_dim=n, activation='relu'))
-model.add(Dense(n, activation='relu'))
+model.add(Dense(2**n,input_dim=n, activation='relu'))
+model.add(Dense(2**n, activation='relu'))
 #model.add(Dense(n, activation='relu'))
 model.add(Dense(units=1, activation='linear'))
 
@@ -233,7 +237,7 @@ y_test_std = (y_test - y_mu) / y_std
 
 
 
-model_history = model.fit(X_train_std, y_train_std, epochs=100, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=20, verbose=2,validation_data=(X_val_std, y_val_std))
 #model.save('low4.h5')
 
 
@@ -250,11 +254,15 @@ plt.show()
 
 y_test_pred = y_mu + model.predict(X_test_std)*y_std
 #y_test_pred = model.predict(X_test_std)
-print("Generalization MSE: ", (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
-print("Generalization MAE: ", (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
+"""
+y_test_pred = np.zeros(h)
+for i in range(h):
+    y_test_pred[i] = np.dot(spin[i],design[i])/2
+print("Generalization MSE: ", (mean_squared_error(y_true=target, y_pred=y_test_pred)))
+print("Generalization MAE: ", (mean_absolute_error(y_true=target, y_pred=y_test_pred)))
 
 plt.figure()
-plt.scatter(y_test_pred, y_test)
+plt.scatter(y_test_pred, target)
 plt.xlabel('y_pred')
 plt.ylabel('y_true')
 plt.plot([0,-0.3], [0,-0.3], linestyle='dashed', color='k')

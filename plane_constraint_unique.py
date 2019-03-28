@@ -212,7 +212,7 @@ for k in range(h):
     eigenvalues, eigenvectors = eigen(H)
     eigenvalues = eigenvalues.round(8)
     b,c  = np.unique(eigenvalues,return_counts=True)
-    #p = c.argsort()
+    p = c.argsort()
     c_sr = np.sqrt(c)
     b = b*c_sr
     #c = c[p]
@@ -251,7 +251,7 @@ model = Sequential()
 
 # add layers
 model.add(Dense(2**n,input_dim=n_j, activation='relu'))
-model.add(Dense(2**(n-1), activation='relu'))
+model.add(Dense(2**n, activation='relu'))
 model.add(Dense(units=n_unique-2, activation='linear'))
 
 model.compile(optimizer='rmsprop',

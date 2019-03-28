@@ -135,7 +135,7 @@ identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
 n = 4
-h = 2200
+h = 100000
 np.random.seed(634)
 
 J = np.zeros((n,n))
@@ -161,7 +161,7 @@ for j in range(n):
 norm_sum = np.sum(norm)
 #J_std = np.std(norm)
 #J /= np.sqrt(norm_sum)
-"""
+
 H = hamiltonian(n,J,np.zeros(n))
 homo_val,homo_vec = eigen(H)
 homo_val = homo_val.round(10)
@@ -170,6 +170,8 @@ homo_Sz = expect_sz(n, homo_vec[:,0])/2
 
 design = np.ndarray(shape = (h,n))
 target = np.zeros(h)
+target_B = np.zeros(h)
+all_B = np.zeros(shape = (h,n))
 
 degen = 1
 check = 1
@@ -194,25 +196,38 @@ for k in range(h):
     eigenvalues, eigenvectors = eigen(H)
     Sz = expect_sz(n, eigenvectors[:,0])/2
     design[k] = Sz-homo_Sz
+    all_B[k] = B
 
     eigenvalues = eigenvalues.round(10)
     target[k] = eigenvalues[0]-homo_gstate-np.dot(Sz,B)/2
+    target_B[k] = eigenvalues[0]-homo_gstate
+"""
+
+design = np.load('n4spin_design.npy')
+all_B = np.load('n4B_design.npy')
+result_B = np.load('n4B_target.npy')
+target = np.load('n4spin_target.npy')
+
+
+
+
 
 
 # define the model
 model = Sequential()
 
 # add layers
-model.add(Dense(n,input_dim=n, activation='relu'))
-model.add(Dense(n, activation='relu'))
+model.add(Dense(2**n,input_dim=n, activation='relu'))
+model.add(Dense(2**n, activation='relu'))
 model.add(Dense(units=1, activation='linear'))
 
 model.compile(optimizer='adam',
               loss='mse')
 
 
-X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
-X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
+X_tv, X_test, B_tv, B_test, y_tv, y_test, yB_tv, yB_test = train_test_split(design, all_B, target, result_B, test_size=0.2, random_state = 634)
+#B_tv, B_test, y_tvnope, y_testnope = train_test_split(all_B, target,test_size=0.2, random_state = 634)
+X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2, random_state = 634)
 
 X_train_std = X_train
 X_val_std = X_val
@@ -237,13 +252,16 @@ y_train_std = (y_train - y_mu) / y_std
 y_val_std = (y_val - y_mu) / y_std
 y_test_std = (y_test - y_mu) / y_std
 
+print (y_mu)
+print (y_std)
+print (X_mu)
+print (X_std)
 
 
+model_history = model.fit(X_train_std, y_train_std, epochs=30, verbose=2,validation_data=(X_val_std, y_val_std))
+model.save('func4large.h5')
 
-model_history = model.fit(X_train_std, y_train_std, epochs=150, verbose=2,validation_data=(X_val_std, y_val_std))
-#model.save('low4.h5')
-
-
+"""
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
 plt.plot(range(1, len(model_history.history['val_loss'])+1), model_history.history['val_loss'], label='Val')
@@ -251,21 +269,43 @@ plt.legend()
 plt.title("Energy Functional Neural Network Learning Curve: n = 4, N = 2,000")
 plt.xlabel('Number of Epochs')
 plt.ylabel('Loss')
-plt.savefig('learning_smallN.eps', format='eps', dpi=1000)
+#plt.savefig('learning_smallN.eps', format='eps', dpi=1000)
 plt.show()
 
 # Generalization Error
-"""
+
+spin_contr = np.zeros(len(y_test))
+for i in range(len(y_test)):
+    spin_contr[i] = np.dot(X_test[i],B_test[i])
+
 y_test_pred = y_mu + model.predict(X_test_std)*y_std
+#y_test_pred = model.predict(X_test_std)
+
+
+
 #y_test_pred = model.predict(X_test_std)
 print("Generalization MSE: " , (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
 print("Generalization MAE: " , (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
 plt.figure()
+plt.scatter(y_test+spin_contr,y_test_pred[:,0]+spin_contr/2-yB_test, s=1)
+plt.xlabel('Predicted $\Delta E$')
+
+axes = plt.gca()
+#axes.set_ylim([-0.001,0.001])
+#axes.set_xlim([-0.07,0])
+#plt.plot([-0.07,0], [0,0], color='k')
+plt.grid()
+plt.ylabel('Error')
+plt.subplots_adjust(left=.16)
+#plt.savefig('8Nspin_resid.eps', format='eps', dpi=1200)
+plt.show()
+
+plt.figure()
 plt.scatter(y_test_pred, y_test)
 plt.xlabel('y_pred')
 plt.ylabel('y_true')
-plt.plot([0,-0.003], [0,-0.003], linestyle='dashed', color='k')
+plt.plot([0,-0.0005], [0,-0.0005], linestyle='dashed', color='k')
 plt.grid()
 plt.show()
 """

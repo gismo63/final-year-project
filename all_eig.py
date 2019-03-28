@@ -133,7 +133,7 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
+n = 3 # number of spin sites
 n_j = int(n*(n-1)/2)
 print (n_j)
 h = 10000
@@ -184,8 +184,8 @@ for k in range(h):
 model = Sequential()
 
 # add layers
-model.add(Dense(2**(n+2),input_dim=n_j, activation='relu'))
-model.add(Dense(2**(n+2), activation='relu'))
+model.add(Dense(2**(n),input_dim=n_j, activation='relu'))
+model.add(Dense(2**(n), activation='relu'))
 model.add(Dense(units=2**n, activation='linear'))
 
 model.compile(optimizer='adam',

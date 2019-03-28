@@ -134,10 +134,10 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 6 # number of spin sites
+n = 4 # number of spin sites
 n_j = int(n*(n-1)/2)
 print (n_j)
-h = 10000
+h = 30000
 n_spins = int(n/2)+1
 
 design = np.ndarray(shape = (h,n_j))
@@ -206,6 +206,10 @@ model.compile(optimizer='adam',
 X_tv, X_test, y_tv, y_test = train_test_split(design, target_one_hot, test_size=0.2)
 X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
 
+X_train_std = X_train
+X_val_std = X_val
+X_test_std = X_test
+
 X_mu = np.mean(X_train, axis=0)
 X_std = np.std(X_train, axis=0)
 
@@ -222,7 +226,7 @@ plt.plot(range(1, len(model_history.history['val_acc'])+1), model_history.histor
 plt.legend()
 plt.xlabel('Number of Epochs')
 plt.ylabel('Accuracy')
-
+plt.savefig('4Nlow_spin.eps', format='eps', dpi=1200)
 plt.show()
 
 # Generalization Error

@@ -144,7 +144,7 @@ identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 n = 5 # number of spin sites
 n_j = int(n*(n-1)/2)
 print (n_j)
-h = 10000
+h = 25000
 n_unique = int(ncr(n,int(n/2)))
 
 design = np.ndarray(shape = (h,n_j))
@@ -185,10 +185,10 @@ for k in range(h):
     #print H
 
     eigenvalues, eigenvectors = eigen(H)
-    eigenvalues = eigenvalues.round(9)
+    eigenvalues = eigenvalues.round(8)
     b,c  = np.unique(eigenvalues,return_counts=True)
-    #p = c.argsort()
-    #b = b[p]
+    p = c.argsort()
+    b = b[p]
 
     target[k] = b
 
@@ -197,8 +197,8 @@ for k in range(h):
 model = Sequential()
 
 # add layers
-model.add(Dense(2**(n+2),input_dim=n_j, activation='relu'))
-model.add(Dense(2**(n+2), activation='relu'))
+model.add(Dense(2**(n),input_dim=n_j, activation='relu'))
+model.add(Dense(2**(n), activation='relu'))
 model.add(Dense(units=n_unique, activation='linear'))
 
 model.compile(optimizer='adam',

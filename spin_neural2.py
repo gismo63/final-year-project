@@ -134,25 +134,56 @@ identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
 
-n = 4
-h = 5000
+n = 8
+h = 100000
+np.random.seed(634)
+
 J = np.zeros((n,n))
 for i in range(n-1):
     J[i][i+1] = 1
 J[0][n-1] = 1
 strength = 1./np.sqrt(n) #overall multiplicative factor of interation strength
-J= J*strength
+#J= J*strength
+
+
+
+"""
+J = np.zeros((n,n))
+
+norm = []
+p = 0
+for j in range(n):
+    i=0
+    while i<j:
+        J[i][j] = np.random.normal(0,1) # random number with normal distribution centered on 0, standard deviation 1
+        norm.append(J[i][j]**2)
+        i+=1
+norm_sum = np.sum(norm)
+#J_std = np.std(norm)
+#J /= np.sqrt(norm_sum)
+"""
 H = hamiltonian(n,J,np.zeros(n))
 homo_val,homo_vec = eigen(H)
+homo_val = homo_val.round(10)
 homo_gstate = homo_val[0]
+homo_Sz = expect_sz(n, homo_vec[:,0])/2
 
 design = np.ndarray(shape = (h,n))
 target = np.zeros(h)
+target_B = np.zeros(h)
+all_B = np.zeros(shape = (h,n))
 
-
+degen = 1
+check = 1
+while check:
+    if homo_val[degen] == homo_gstate:
+        degen+=1
+    else:
+        check = 0
+print (degen)
 
 for k in range(h):
-    B = np.random.uniform(0,0.1,n) #magnetic field strength
+    B = np.random.uniform(-0.1,0.1,n) #magnetic field strength
     B_sq = np.dot(B,B)
 
 
@@ -164,18 +195,26 @@ for k in range(h):
 
     eigenvalues, eigenvectors = eigen(H)
     Sz = expect_sz(n, eigenvectors[:,0])/2
-    design[k] = Sz
+    design[k] = Sz-homo_Sz
+    all_B[k] = B
 
     eigenvalues = eigenvalues.round(10)
-    target[k] = eigenvalues[0]-homo_gstate
+    target[k] = eigenvalues[0]-homo_gstate-np.dot(Sz,B)/2
+    target_B[k] = eigenvalues[0]-homo_gstate
+
+np.save('n8B_design.npy', all_B)
+np.save('n8spin_design.npy', design)
+np.save('n8spin_target.npy', target)
+np.save('n8B_target.npy', target_B)
 
 
+"""
 # define the model
 model = Sequential()
 
 # add layers
-model.add(Dense(2**n,input_dim=n, activation='relu'))
-model.add(Dense(2**(n-1), activation='relu'))
+model.add(Dense(n,input_dim=n, activation='relu'))
+model.add(Dense(n, activation='relu'))
 model.add(Dense(units=1, activation='linear'))
 
 model.compile(optimizer='adam',
@@ -211,7 +250,7 @@ y_test_std = (y_test - y_mu) / y_std
 
 
 
-model_history = model.fit(X_train_std, y_train_std, epochs=100, verbose=2,validation_data=(X_val_std, y_val_std))
+model_history = model.fit(X_train_std, y_train_std, epochs=150, verbose=2,validation_data=(X_val_std, y_val_std))
 #model.save('low4.h5')
 
 
@@ -219,22 +258,25 @@ plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
 plt.plot(range(1, len(model_history.history['val_loss'])+1), model_history.history['val_loss'], label='Val')
 plt.legend()
+plt.title("Energy Functional Neural Network Learning Curve: n = 4, N = 2,000")
 plt.xlabel('Number of Epochs')
 plt.ylabel('Loss')
-
+plt.savefig('learning_smallN.eps', format='eps', dpi=1000)
 plt.show()
 
 # Generalization Error
 
 y_test_pred = y_mu + model.predict(X_test_std)*y_std
 #y_test_pred = model.predict(X_test_std)
-print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
-print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
+print("Generalization MSE: " , (mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
+print("Generalization MAE: " , (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
 plt.figure()
 plt.scatter(y_test_pred, y_test)
 plt.xlabel('y_pred')
 plt.ylabel('y_true')
-plt.plot([0,-0.3], [0,-0.3], linestyle='dashed', color='k')
+plt.plot([0,-0.003], [0,-0.003], linestyle='dashed', color='k')
 plt.grid()
 plt.show()
+
+"""

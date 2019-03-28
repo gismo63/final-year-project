@@ -132,11 +132,11 @@ s_y = np.array([[0,-1],[1,0]])
 s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
-np.random.seed(6340)
+np.random.seed(634)
 
 n = 4
-h = 10000
-"""
+h = 100000
+
 J = np.zeros((n,n))
 for i in range(n-1):
     J[i][i+1] = 1
@@ -197,22 +197,25 @@ for k in range(h):
     target[k] = Sz-homo_Sz
 
     design[k] = B
+"""
 
+target = np.load('n4spin_design.npy')
+design = np.load('n4B_design.npy')
 
 # define the model
 model = Sequential()
 
 # add layers
-model.add(Dense(n,input_dim=n, activation='relu'))
-model.add(Dense(n, activation='relu'))
+model.add(Dense(2**n,input_dim=n, activation='relu'))
+model.add(Dense(2**n, activation='relu'))
 model.add(Dense(units=n, activation='linear'))
 
 model.compile(optimizer='adam',
               loss='mse')
 
 
-X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2)
-X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2)
+X_tv, X_test, y_tv, y_test = train_test_split(design, target, test_size=0.2, random_state = 634)
+X_train, X_val, y_train, y_val = train_test_split(X_tv, y_tv, test_size=0.2, random_state = 634)
 
 X_train_std = X_train
 X_val_std = X_val
@@ -237,13 +240,16 @@ y_train_std = (y_train - y_mu) / y_std
 y_val_std = (y_val - y_mu) / y_std
 y_test_std = (y_test - y_mu) / y_std
 
+print (y_mu)
+print (y_std)
+print (X_mu)
+print (X_std)
 
 
+model_history = model.fit(X_train_std, y_train_std, epochs=20, verbose=2,validation_data=(X_val_std, y_val_std))
+model.save('N4mag-spin.h5')
 
-model_history = model.fit(X_train_std, y_train_std, epochs=100, verbose=2,validation_data=(X_val_std, y_val_std))
-#model.save('low4.h5')
-
-
+"""
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
 plt.plot(range(1, len(model_history.history['val_loss'])+1), model_history.history['val_loss'], label='Val')
@@ -261,9 +267,11 @@ print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_tes
 print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
 plt.figure()
-plt.scatter(y_test_pred, y_test)
-plt.xlabel('y_pred')
-plt.ylabel('y_true')
-plt.plot([0,-0.3], [0,-0.3], linestyle='dashed', color='k')
+plt.scatter(y_test_pred, y_test, s=1)
+plt.xlabel('Predicted $S_i$')
+plt.ylabel('True $S_i$')
+plt.plot([0.21,-0.21], [0.21,-0.21], linestyle='dashed', color='k')
 plt.grid()
+#plt.savefig('8Nmag-spin.eps', format='eps', dpi=1200)
 plt.show()
+"""

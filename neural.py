@@ -133,7 +133,7 @@ s_x = np.array([[0,1],[1,0]])
 identity = np.array([[1,0],[0,1]]) #identity matrix in same basis
 
 
-n = 4 # number of spin sites
+n = 3 # number of spin sites
 n_j = int(n*(n-1)/2)
 print (n_j)
 h = 10000
@@ -242,7 +242,7 @@ print("Generalization MSE: %f" % (mean_squared_error(y_true=y_test, y_pred=y_tes
 print("Generalization MAE: %f" % (mean_absolute_error(y_true=y_test, y_pred=y_test_pred)))
 
 plt.figure()
-plt.scatter(y_test_pred, y_test)
+plt.scatter(y_test_pred, y_test, s=1)
 plt.xlabel('y_pred')
 plt.ylabel('y_true')
 plt.plot([0,-2], [0,-2], linestyle='dashed', color='k')
