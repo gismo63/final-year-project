@@ -203,16 +203,17 @@ for k in range(h):
     target_B[k] = eigenvalues[0]-homo_gstate
 """
 
-design = np.load('n4spin_design.npy')
-all_B = np.load('n4B_design.npy')
-result_B = np.load('n4B_target.npy')
-target = np.load('n4spin_target.npy')
+#design = np.load('n4spin_design.npy')
+#all_B = np.load('n4B_design.npy')
+result_B = np.load('n8B_target.npy')
+#target = np.load('n4spin_target.npy')
+
+print (np.average(result_B))
 
 
 
 
-
-
+"""
 # define the model
 model = Sequential()
 
@@ -260,7 +261,7 @@ print (X_std)
 
 model_history = model.fit(X_train_std, y_train_std, epochs=30, verbose=2,validation_data=(X_val_std, y_val_std))
 model.save('func4large.h5')
-
+"""
 """
 plt.figure()
 plt.plot(range(1, len(model_history.history['loss'])+1), model_history.history['loss'], label='Train')
